@@ -21,7 +21,7 @@ class QrController
 
             if(!$data){
                 http_response_code(400);
-                echo json_encode(["error"=>"JSON inválido"]);
+                echo json_encode(["error"=>"JSON invalido"]);
                 return;
             }
 
@@ -36,37 +36,48 @@ class QrController
 
             if(!Validator::validateSize($size)){
                 http_response_code(400);
-                echo json_encode(["error"=>"Tamaño inválido"]);
+                echo json_encode(["error"=>"Tamaño invalido (100-1000)"]);
                 return;
             }
 
             if(!Validator::validateErrorLevel($errorLevel)){
                 http_response_code(400);
-                echo json_encode(["error"=>"Nivel de corrección inválido"]);
+                echo json_encode(["error"=>"Nivel de correccion invalido (L,M,Q,H)"]);
                 return;
             }
 
             switch($data['type']){
 
                 case 'text':
+                    if(!isset($data['content'])){
+                        http_response_code(400);
+                        echo json_encode(["error"=>"Contenido requerido"]);
+                        return;
+                    }
                     $result = $this->service->generate($data['content'], $size, $errorLevel);
                 break;
 
                 case 'url':
-                    if(!Validator::validateURL($data['content'])){
+                    if(!isset($data['content']) || !Validator::validateURL($data['content'])){
                         http_response_code(400);
-                        echo json_encode(["error"=>"URL inválida"]);
+                        echo json_encode(["error"=>"URL invalida"]);
                         return;
                     }
                     $result = $this->service->generate($data['content'], $size, $errorLevel);
                 break;
 
                 case 'wifi':
-                    if(!Validator::validateWifiSecurity($data['security'])){
+                    if(
+                        !isset($data['ssid']) ||
+                        !isset($data['password']) ||
+                        !isset($data['security']) ||
+                        !Validator::validateWifiSecurity($data['security'])
+                    ){
                         http_response_code(400);
-                        echo json_encode(["error"=>"Tipo de seguridad inválido"]);
+                        echo json_encode(["error"=>"Datos WiFi invalidos"]);
                         return;
                     }
+
                     $result = $this->service->generateWifi(
                         $data['ssid'],
                         $data['password'],
@@ -77,11 +88,16 @@ class QrController
                 break;
 
                 case 'geo':
-                    if(!Validator::validateCoordinates($data['lat'],$data['lon'])){
+                    if(
+                        !isset($data['lat']) ||
+                        !isset($data['lon']) ||
+                        !Validator::validateCoordinates($data['lat'],$data['lon'])
+                    ){
                         http_response_code(400);
-                        echo json_encode(["error"=>"Coordenadas inválidas"]);
+                        echo json_encode(["error"=>"Coordenadas invalidas"]);
                         return;
                     }
+
                     $result = $this->service->generateGeo(
                         $data['lat'],
                         $data['lon'],

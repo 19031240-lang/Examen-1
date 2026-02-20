@@ -12,18 +12,22 @@ class QrService
 {
     public function generate(string $content, int $size, string $errorLevel)
     {
+        // Validar contenido demasiado grande
         if(strlen($content) > 1000){
             http_response_code(413);
             throw new \Exception("Contenido demasiado grande");
         }
 
+        // Asignar nivel de corrección
         $errorCorrection = match($errorLevel){
             'L' => new ErrorCorrectionLevelLow(),
             'M' => new ErrorCorrectionLevelMedium(),
             'Q' => new ErrorCorrectionLevelQuartile(),
             'H' => new ErrorCorrectionLevelHigh(),
+            default => new ErrorCorrectionLevelMedium()
         };
 
+        // Construir QR
         $result = Builder::create()
             ->writer(new PngWriter())
             ->data($content)
@@ -40,5 +44,17 @@ class QrService
             "file" => $filename,
             "url" => "http://localhost/api-qr/storage/" . $filename
         ];
+    }
+
+    public function generateWifi($ssid, $password, $security, $size, $errorLevel)
+    {
+        $content = "WIFI:T:$security;S:$ssid;P:$password;;";
+        return $this->generate($content, $size, $errorLevel);
+    }
+
+    public function generateGeo($lat, $lon, $size, $errorLevel)
+    {
+        $content = "geo:$lat,$lon";
+        return $this->generate($content, $size, $errorLevel);
     }
 }
